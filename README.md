@@ -4,4 +4,4 @@
 
 - [ ] Implement hash-join 
 
-&copy 2022
+(c) 2022
