@@ -1,0 +1,1 @@
+docker exec -it example_app-HelloRedis-1 redis-cli FLUSHALL
