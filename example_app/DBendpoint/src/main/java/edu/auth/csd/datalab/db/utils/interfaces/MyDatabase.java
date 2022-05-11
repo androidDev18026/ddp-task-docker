@@ -5,5 +5,6 @@ public interface MyDatabase {
     public String getData(String key);
     public void putData(String key, String value);
     public void close();
+    public void getAllData();
 
 }

@@ -1,4 +1,4 @@
-FROM maven:openjdk AS builder
+FROM maven:mine AS builder
 COPY src /opt/src
 COPY pom.xml /opt
 WORKDIR /opt

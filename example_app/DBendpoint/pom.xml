@@ -53,7 +53,8 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>edu.auth.csd.datalab.db.ContinuousQueries</mainClass>
+                            <!-- Change to Continuous Queries for production -->
+                            <mainClass>edu.auth.csd.datalab.db.DebugQueries</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
