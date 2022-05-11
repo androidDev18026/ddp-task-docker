@@ -9,3 +9,4 @@ COPY --from=builder /opt/target/*.jar /opt/assets/job.jar
 WORKDIR /opt/assets
 EXPOSE 1000
 CMD java -jar job.jar
+
