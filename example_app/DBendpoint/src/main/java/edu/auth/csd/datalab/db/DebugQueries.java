@@ -44,33 +44,20 @@ public class DebugQueries {
 
         ignite.constructHT();
         redis.constructHT();
-
-        Hashtable<Integer, String> htRedis = redis.getHashtable();
-        Hashtable<Integer, String> htIgnite = ignite.getHashtable();
-
-        /* check for matches hash-join
-        for (int key : htRedis.keySet()) {
-            if (htIgnite.containsKey(key)) {
-                ++counter;
-                System.out.printf("*Found match for key %d -> [Redis ] value: %-4s\t[Ignite] value: %-4s\n", key,
-                        redis.getData(htRedis.get(key)), ignite.getData(htIgnite.get(key)));
-            }
-        }
-        */
         
-        // alternative
-        for (int key : htRedis.keySet()) {
-            for (String key_i : ignite.getAllKeys()) {
-                if (key_i.hashCode() == key) {
-                    ++counter;
-                    System.out.printf("*Found match for key %d -> [Redis ] value: %-4s\t[Ignite] value: %-4s\n", key,
-                        redis.getData(htRedis.get(key)), ignite.getData(key_i));
-                }
-            }
-        }
+        HashJoin hashJoin = HashJoin.getInstance(ignite, redis);
 
-        System.out.println("Found " + counter + " matches");
+        long start1 = System.currentTimeMillis();
+        hashJoin.doHashJoin1();
+        long dur1 = System.currentTimeMillis() - start1;
 
+        long start2 = System.currentTimeMillis();
+        hashJoin.doHashJoin2();
+        long dur2 = System.currentTimeMillis() - start2;
+        
+        System.out.printf("HashJoin1 took %dms\n", dur1);
+        System.out.printf("HashJoin2 took %dms\n", dur2);
+        
         ignite.close();
         redis.close();
     }

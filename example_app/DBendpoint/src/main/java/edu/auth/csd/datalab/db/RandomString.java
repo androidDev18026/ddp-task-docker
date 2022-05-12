@@ -12,7 +12,7 @@ class RandomString {
     // create an object of Random class
     private Random random = new Random(seed);
     // specify length of random string
-    public int length;
+    private int length;
 
     RandomString() {
         sb = new StringBuilder();
