@@ -1,6 +1,5 @@
 package edu.auth.csd.datalab.db;
 
-import java.util.Hashtable;
 import java.util.Random;
 
 import edu.auth.csd.datalab.db.utils.models.MyIgnite;
@@ -44,20 +43,20 @@ public class DebugQueries {
 
         ignite.constructHT();
         redis.constructHT();
-        
+
         HashJoin hashJoin = HashJoin.getInstance(ignite, redis);
 
-        long start1 = System.currentTimeMillis();
-        hashJoin.doHashJoin1();
-        long dur1 = System.currentTimeMillis() - start1;
+        // long start1 = System.currentTimeMillis();
+        // hashJoin.doHashJoin1();
+        // long dur1 = System.currentTimeMillis() - start1;
 
         long start2 = System.currentTimeMillis();
         hashJoin.doHashJoin2();
         long dur2 = System.currentTimeMillis() - start2;
-        
-        System.out.printf("HashJoin1 took %dms\n", dur1);
+
+        // System.out.printf("HashJoin1 took %dms\n", dur1);
         System.out.printf("HashJoin2 took %dms\n", dur2);
-        
+
         ignite.close();
         redis.close();
     }

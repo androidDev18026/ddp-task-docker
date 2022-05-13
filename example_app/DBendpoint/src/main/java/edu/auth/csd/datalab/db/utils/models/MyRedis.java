@@ -1,5 +1,8 @@
 package edu.auth.csd.datalab.db.utils.models;
 
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -10,8 +13,8 @@ import redis.clients.jedis.Jedis;
 public class MyRedis implements MyDatabase {
 
     private Jedis redis;
-    private Hashtable<Integer, String> hashtable = new Hashtable<>(100000, (float) .8);
-    
+    private Hashtable<BigInteger, String> hashtable = new Hashtable<>(100000, (float) .8);
+
     public MyRedis(String url, int port) {
         redis = new Jedis(url, port);
     }
@@ -30,11 +33,11 @@ public class MyRedis implements MyDatabase {
         System.out.println("Deleted redis cache");
     }
 
-    public Hashtable<Integer, String> getHashtable() {
+    public Hashtable<BigInteger, String> getHashtable() {
         return hashtable;
     }
 
-    public void setHashtable(Hashtable<Integer, String> hashtable) {
+    public void setHashtable(Hashtable<BigInteger, String> hashtable) {
         this.hashtable = hashtable;
     }
 
@@ -74,10 +77,18 @@ public class MyRedis implements MyDatabase {
     public void constructHT() {
         List<String> keys = this.getAllKeys();
 
-        for (String key : keys) {
-            hashtable.put(key.hashCode(), key);
-            // System.out.println("[Redis] Added key " + key + " with hash value of " + key.hashCode());
+        try {
+            MessageDigest mDigest = MessageDigest.getInstance("SHA-256");
+
+            for (String key : keys) {
+                mDigest.update(key.getBytes());
+                hashtable.put(new BigInteger(mDigest.digest()), key);
+                // System.out.println("[Redis] Added key " + key + " with hash value of " +
+                // mDigest.digest().toString());
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         }
-        
+
     }
 }

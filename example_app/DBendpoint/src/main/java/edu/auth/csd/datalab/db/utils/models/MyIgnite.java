@@ -5,6 +5,9 @@ import edu.auth.csd.datalab.db.utils.interfaces.MyDatabase;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -16,13 +19,13 @@ public class MyIgnite implements MyDatabase {
 
     private IgniteClient ignite;
     private ClientCache<String, String> cache;
-    private Hashtable<Integer, String> hashtable = new Hashtable<>(100000, (float) 0.8);
+    private Hashtable<BigInteger, String> hashtable = new Hashtable<>(100000, (float) 0.8);
 
-    public Hashtable<Integer, String> getHashtable() {
+    public Hashtable<BigInteger, String> getHashtable() {
         return hashtable;
     }
 
-    public void setHashtable(Hashtable<Integer, String> hashtable) {
+    public void setHashtable(Hashtable<BigInteger, String> hashtable) {
         this.hashtable = hashtable;
     }
 
@@ -50,7 +53,7 @@ public class MyIgnite implements MyDatabase {
     public boolean containsKey(String key) {
         return cache.containsKey(key);
     }
-    
+
     public void putData(String key, String value) {
         cache.put(key, value);
     }
@@ -92,13 +95,20 @@ public class MyIgnite implements MyDatabase {
 
     @Override
     public void constructHT() {
+
         List<String> keys = this.getAllKeys();
 
-        for (String key : keys) {
-            hashtable.put(key.hashCode(), key);
-            // System.out.println("[Ignite] Added key " + key + " with hash value of " +
-            // key.hashCode());
-        }
+        try {
+            MessageDigest mDigest = MessageDigest.getInstance("SHA-256");
 
+            for (String key : keys) {
+                mDigest.update(key.getBytes());
+                hashtable.put(new BigInteger(mDigest.digest()), key);
+                // System.out.println("[Ignite] Added key " + key + " with hash value of " +
+                // mDigest.digest().toString());
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
     }
 }
