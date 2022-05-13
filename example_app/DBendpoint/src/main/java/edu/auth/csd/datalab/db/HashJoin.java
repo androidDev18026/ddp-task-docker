@@ -76,6 +76,6 @@ class HashJoin {
             }
         }
 
-        System.out.printf("[HashJoin2] ===> %d hits <===\n", counter);
+        System.out.printf("[HashJoin2] ===> %d hit(s) <===\n", counter);
     }
 }
