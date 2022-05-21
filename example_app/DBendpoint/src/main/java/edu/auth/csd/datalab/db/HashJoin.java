@@ -1,6 +1,9 @@
 package edu.auth.csd.datalab.db;
 
-import java.math.BigInteger;
+import java.util.Hashtable;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
 
 import edu.auth.csd.datalab.db.utils.models.MyIgnite;
 import edu.auth.csd.datalab.db.utils.models.MyRedis;
@@ -10,10 +13,15 @@ class HashJoin {
     private static MyIgnite ignite;
     private static MyRedis redis;
     private static HashJoin hashJoin = null;
+    private static Hashtable<Integer, String> redisHT;
+    private static Hashtable<Integer, String> igniteHT;
+    public static int counter = 0;
 
     private HashJoin(MyIgnite ignite_i, MyRedis redis_i) {
         ignite = ignite_i;
         redis = redis_i;
+        ignite.createIterator();
+        redis.createIterator();
     }
 
     public static HashJoin getInstance(final MyIgnite ignite_i, final MyRedis redis_i) {
@@ -23,59 +31,66 @@ class HashJoin {
         return hashJoin;
     }
 
-    /*
-     * public void doHashJoin1(boolean... verbose) {
-     * 
-     * StringHash stringHash = StringHash.getInstance();
-     * boolean verb = verbose.length > 0 ? verbose[0] : false;
-     * long counter = 0;
-     * 
-     * if (redis.getHashtable().isEmpty()) {
-     * System.out.println("Found empty Hashtable in redis, building it...");
-     * redis.constructHT();
-     * }
-     * 
-     * for (BigInteger key : redis.getHashtable().keySet()) {
-     * for (String key_i : ignite.getAllKeys()) {
-     * if (stringHash.getHash(key_i) == key) {
-     * ++counter;
-     * if (verb) {
-     * System.out.printf("*Found match for key %d => (%s,%s)\n", key,
-     * redis.getData(redis.getHashtable().get(key)), ignite.getData(key_i));
-     * }
-     * }
-     * }
-     * }
-     * 
-     * System.out.printf("[HashJoin1] ===> %d hits <===\n", counter);
-     * }
-     */
+    public ImmutableTriple<String, String, String> probeAndInsert(final ImmutablePair<String, String> tuple,
+            Hashtable<Integer, String> htInsert,
+            Hashtable<Integer, String> htProbe) {
 
-    public void doHashJoin2(boolean... verbose) {
+        String probeResultKey = htProbe.get(tuple.getKey().hashCode());
 
-        boolean verb = verbose.length > 0 ? verbose[0] : false;
+        ImmutableTriple<String, String, String> resultSet = null;
 
-        long counter = 0;
-
-        if (redis.getHashtable().isEmpty()) {
-            redis.constructHT();
+        if (probeResultKey != null) {
+            resultSet = ImmutableTriple.of(probeResultKey, redis.getData(probeResultKey),
+                    ignite.getData(probeResultKey));
         }
 
-        if (ignite.getHashtable().isEmpty()) {
-            ignite.constructHT();
-        }
+        htInsert.putIfAbsent(tuple.getKey().hashCode(), tuple.getKey());
 
-        for (BigInteger key : redis.getHashtable().keySet()) {
-            if (ignite.getHashtable().containsKey(key)) {
-                ++counter;
-                if (verb) {
-                    System.out.printf("*Found match for key %d => (%s,%s)\n", key,
-                            redis.getData(redis.getHashtable().get(key)),
-                            ignite.getData(ignite.getHashtable().get(key)));
-                }
+        return resultSet;
+    }
+
+    public void doPipelinedHashJoin() {
+        redisHT = new Hashtable<>(10000);
+        igniteHT = new Hashtable<>(10000);
+
+        boolean readFromRedis = true;
+        ImmutableTriple<String, String, String> result;
+
+        System.out.println("============================== Hash Join ==============================");
+        while (redis.getIterator().hasNext() && ignite.getIterator().hasNext()) {
+            if (readFromRedis) {
+                result = probeAndInsert(redis.getNextTuple(), redisHT, igniteHT);
+                printResult(result, "Ignite", "Redis");
+            } else {
+                result = probeAndInsert(ignite.getNextTuple(), igniteHT, redisHT);
+                printResult(result, "Redis", "Ignite");
             }
+
+            readFromRedis = !readFromRedis;
         }
 
-        System.out.printf("[HashJoin2] ===> %d hit(s) <===\n", counter);
+        while (redis.getIterator().hasNext()) {
+            result = probeAndInsert(redis.getNextTuple(), redisHT, igniteHT);
+            printResult(result, "Ignite", "Redis");
+        }
+
+        while (ignite.getIterator().hasNext()) {
+            result = probeAndInsert(ignite.getNextTuple(), igniteHT, redisHT);
+            printResult(result, "Redis", "Ignite");
+        }
+    }
+
+    public static void printResult(final ImmutableTriple<String, String, String> triple, final String probe,
+            final String insert) {
+        if (triple != null) {
+            System.out.printf("Got match from probing %-6s and inserting %-6s => (%s, %s, %s)\n", probe, insert,
+                    triple.left,
+                    triple.middle, triple.right);
+            ++counter;
+        }
+    }
+
+    public int getCounter() {
+        return counter;
     }
 }

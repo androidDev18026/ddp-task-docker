@@ -1,11 +1,10 @@
 package edu.auth.csd.datalab.db.utils.models;
 
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import edu.auth.csd.datalab.db.utils.interfaces.MyDatabase;
 import redis.clients.jedis.Jedis;
@@ -13,7 +12,7 @@ import redis.clients.jedis.Jedis;
 public class MyRedis implements MyDatabase {
 
     private Jedis redis;
-    private Hashtable<BigInteger, String> hashtable = new Hashtable<>(100000, (float) .8);
+    private Iterator<String> iterator;
 
     public MyRedis(String url, int port) {
         redis = new Jedis(url, port);
@@ -33,14 +32,6 @@ public class MyRedis implements MyDatabase {
         System.out.println("Deleted redis cache");
     }
 
-    public Hashtable<BigInteger, String> getHashtable() {
-        return hashtable;
-    }
-
-    public void setHashtable(Hashtable<BigInteger, String> hashtable) {
-        this.hashtable = hashtable;
-    }
-
     @Override
     public void putData(String key, String value) {
         redis.set(key, value);
@@ -52,12 +43,16 @@ public class MyRedis implements MyDatabase {
         redis = null;
     }
 
+    public Iterator<String> getIterator() {
+        return iterator;
+    }
+
     public void displayAllData() {
         List<String> keys = new ArrayList<>();
 
         redis.keys("*").forEach(s -> keys.add(s));
 
-        keys.stream().forEach(k -> System.out.printf("Redis: Found Key: %s\n", k));
+        keys.stream().forEach(k -> System.out.printf("[Redis ] Found Key-Value pair: (%s,%s)\n", k, getData(k)));
     }
 
     @Override
@@ -74,21 +69,18 @@ public class MyRedis implements MyDatabase {
     }
 
     @Override
-    public void constructHT() {
-        List<String> keys = this.getAllKeys();
+    public void createIterator() {
+        iterator = redis.keys("*").iterator();
+    }
 
-        try {
-            MessageDigest mDigest = MessageDigest.getInstance("SHA-256");
+    @Override
+    public ImmutablePair<String, String> getNextTuple() {
+        String currentKey;
 
-            for (String key : keys) {
-                mDigest.update(key.getBytes());
-                hashtable.put(new BigInteger(mDigest.digest()), key);
-                // System.out.println("[Redis] Added key " + key + " with hash value of " +
-                // mDigest.digest().toString());
-            }
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+        if (iterator.hasNext()) {
+            currentKey = iterator.next();
+            return ImmutablePair.of(currentKey, this.getData(currentKey));
         }
-
+        return null;
     }
 }

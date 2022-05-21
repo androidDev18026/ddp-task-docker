@@ -3,15 +3,16 @@ package edu.auth.csd.datalab.db.utils.models;
 import edu.auth.csd.datalab.db.utils.interfaces.MyDatabase;
 
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
+import javax.cache.Cache.Entry;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 
@@ -19,15 +20,7 @@ public class MyIgnite implements MyDatabase {
 
     private IgniteClient ignite;
     private ClientCache<String, String> cache;
-    private Hashtable<BigInteger, String> hashtable = new Hashtable<>(100000, (float) 0.8);
-
-    public Hashtable<BigInteger, String> getHashtable() {
-        return hashtable;
-    }
-
-    public void setHashtable(Hashtable<BigInteger, String> hashtable) {
-        this.hashtable = hashtable;
-    }
+    private Iterator<Entry<Object, Object>> iterator;
 
     public MyIgnite(String url, int port) {
         ClientConfiguration cfg = new ClientConfiguration().setAddresses(url + ":" + port);
@@ -42,7 +35,11 @@ public class MyIgnite implements MyDatabase {
     }
 
     public void deleteCache() {
-        cache.removeAll();
+        try {
+            cache.clear();
+        } catch (ClientException e) {
+            e.printStackTrace();
+        }
         System.out.println("Deleted ignite cache");
     }
 
@@ -50,18 +47,28 @@ public class MyIgnite implements MyDatabase {
         return cache.get(key);
     }
 
+    public Iterator<Entry<Object, Object>> getIterator() {
+        return iterator;
+    }
+
     public boolean containsKey(String key) {
         return cache.containsKey(key);
     }
 
     public void putData(String key, String value) {
-        cache.put(key, value);
+        // No updates on keys allowed
+        cache.putIfAbsent(key, value);
     }
 
     public void close() {
         cache = null;
         ignite.close();
         ignite = null;
+    }
+
+    @Override
+    public void createIterator() {
+        iterator = cache.query(new ScanQuery<>()).iterator();
     }
 
     // initial implementation with simple list
@@ -74,7 +81,7 @@ public class MyIgnite implements MyDatabase {
                 keys.add(key.getKey().toString());
         });
 
-        keys.stream().forEach(k -> System.out.printf("Ignite: Found Key: %s\n", k));
+        keys.stream().forEach(k -> System.out.printf("[Ignite] Found Key-Value pair: (%s,%s)\n", k, getData(k)));
     }
 
     @Override
@@ -94,21 +101,14 @@ public class MyIgnite implements MyDatabase {
     }
 
     @Override
-    public void constructHT() {
+    public ImmutablePair<String, String> getNextTuple() {
 
-        List<String> keys = this.getAllKeys();
+        Entry<Object, Object> currentTuple;
 
-        try {
-            MessageDigest mDigest = MessageDigest.getInstance("SHA-256");
-
-            for (String key : keys) {
-                mDigest.update(key.getBytes());
-                hashtable.put(new BigInteger(mDigest.digest()), key);
-                // System.out.println("[Ignite] Added key " + key + " with hash value of " +
-                // mDigest.digest().toString());
-            }
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+        if (iterator.hasNext()) {
+            currentTuple = iterator.next();
+            return ImmutablePair.of(currentTuple.getKey().toString(), currentTuple.getValue().toString());
         }
+        return null;
     }
 }

@@ -13,8 +13,6 @@ public class DebugQueries {
     final static String string_redis = "REDIS_HOST";
     final static RandomString rs = new RandomString(2);
 
-    static int counter = 0;
-
     public static void main(String[] args) {
         String igniteHost = (System.getenv(string_ignite) != null) ? System.getenv(string_ignite) : "HelloIgnite";
         String redisHost = (System.getenv(string_redis) != null) ? System.getenv(string_redis) : "HelloRedis";
@@ -28,34 +26,24 @@ public class DebugQueries {
         ignite.deleteCache();
         redis.deleteCache();
 
-        System.out.println("Filling databases with " + iter + " elements");
+        System.out.println("Filling 2 databases with " + iter + " elements");
 
         for (int i = 0; i < iter; ++i) {
-            ignite.putData(rs.getRandomString(), String.valueOf(new Random().nextInt(10)));
-            redis.putData(rs.getRandomString(), String.valueOf(new Random().nextInt(10)));
+            ignite.putData(rs.getRandomString(), String.valueOf(new Random().nextInt(100)));
+            redis.putData(rs.getRandomString(), String.valueOf(new Random().nextInt(100)));
         }
 
-        // System.out.println(ignite.getData("test"));
-        // System.out.println(redis.getData("test"));
-
         ignite.displayAllData();
+        System.out.println("-------------------------------------");
         redis.displayAllData();
-
-        ignite.constructHT();
-        redis.constructHT();
 
         HashJoin hashJoin = HashJoin.getInstance(ignite, redis);
 
-        // long start1 = System.currentTimeMillis();
-        // hashJoin.doHashJoin1();
-        // long dur1 = System.currentTimeMillis() - start1;
+        long startHJ = System.currentTimeMillis();
+        hashJoin.doPipelinedHashJoin();
+        long durHJ = System.currentTimeMillis() - startHJ;
 
-        long start2 = System.currentTimeMillis();
-        hashJoin.doHashJoin2();
-        long dur2 = System.currentTimeMillis() - start2;
-
-        // System.out.printf("HashJoin1 took %dms\n", dur1);
-        System.out.printf("HashJoin2 took %dms\n", dur2);
+        System.out.printf("\n== Pipelined Hash-Join took %dms - %d hit(s) ==\n", durHJ, hashJoin.getCounter());
 
         ignite.close();
         redis.close();
