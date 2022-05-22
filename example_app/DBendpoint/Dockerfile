@@ -1,5 +1,4 @@
-# change mine -> latest
-FROM maven:mine AS builder
+FROM maven:latest AS builder
 COPY src /opt/src
 COPY pom.xml /opt
 WORKDIR /opt

@@ -75,8 +75,17 @@ public class DebugQueries {
         semiJoin.doSemiJoin();
         long durSJ = System.currentTimeMillis() - startSJ;
 
-        System.out.printf("\n== Pipelined Hash-Join took %dms - %d hit(s) ==\n", durHJ, hashJoin.getCounter());
-        System.out.printf("== Semi-Join took %dms - %d hit(s) ==\n", durSJ - 5000, semiJoin.getCounter());
+        IntersectionBloomFilter intersectionBF = IntersectionBloomFilter.getInstance(ignite, redis,
+                Math.round((iterRedis + iterIgnite) / 5));
+
+        long startBFJ = System.currentTimeMillis();
+        intersectionBF.doIntersectionBFJoin();
+        long durBFJ = System.currentTimeMillis() - startBFJ;
+
+        System.out.printf("\n== Pipelined Hash Join took %dms - %d hit(s) ==\n", durHJ, hashJoin.getCounter());
+        System.out.printf("== Semi Join took %dms - %d hit(s) ==\n", durSJ - 5000, semiJoin.getCounter());
+        System.out.printf("== Intersection Bloom Join took %dms - %d hit(s) ==\n", durBFJ,
+                intersectionBF.getCounter());
 
         ignite.close();
         redis.close();
