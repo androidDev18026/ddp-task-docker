@@ -1,7 +1,8 @@
 package edu.auth.csd.datalab.db;
 
 import java.util.Hashtable;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 
@@ -15,7 +16,17 @@ class HashJoin {
     private static HashJoin hashJoin = null;
     private static Hashtable<Integer, String> redisHT;
     private static Hashtable<Integer, String> igniteHT;
+    private static Logger logger = null;
     public static int counter = 0;
+
+    static {
+        System.setProperty(
+            "java.util.logging.SimpleFormatter.format",
+            "[%1$tF %1$tT] [%4$-7s] %5$s %n");
+        final String logLevel = System.getProperty("logLevel") != null ? System.getProperty("logLevel") : "info";
+        logger = Logger.getLogger(HashJoin.class.getName());
+        logger.setLevel(Level.parse(logLevel));
+    }
 
     private HashJoin(MyIgnite ignite_i, MyRedis redis_i) {
         ignite = ignite_i;
@@ -83,9 +94,9 @@ class HashJoin {
     public static void printResult(final ImmutableTriple<String, String, String> triple, final String probe,
             final String insert) {
         if (triple != null) {
-            System.out.printf("Got match from probing %-6s and inserting %-6s => (%s, %s, %s)\n", probe, insert,
-                    triple.left,
-                    triple.middle, triple.right);
+            logger.info(String.format("Got match from probing %-6s and inserting %-6s => (%s, %s, %s)",probe, insert,
+                triple.left,
+                triple.middle, triple.right));
             ++counter;
         }
     }

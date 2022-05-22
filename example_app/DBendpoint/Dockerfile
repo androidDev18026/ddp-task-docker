@@ -1,3 +1,4 @@
+# change mine -> latest
 FROM maven:mine AS builder
 COPY src /opt/src
 COPY pom.xml /opt
@@ -8,5 +9,4 @@ FROM openjdk:11
 COPY --from=builder /opt/target/*.jar /opt/assets/job.jar
 WORKDIR /opt/assets
 EXPOSE 1000
-CMD java -jar job.jar
-
+CMD java -jar -DlogLevel=INFO job.jar
