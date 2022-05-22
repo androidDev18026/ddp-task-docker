@@ -28,7 +28,7 @@ public class DebugQueries {
         System.setProperty(
                 "java.util.logging.SimpleFormatter.format",
                 "%1$tF %1$tT [%4$-7s] %5$s %n");
-        final String logLevel = System.getProperty("logLevel") != null ? System.getProperty("logLevel") : "info";
+        final String logLevel = System.getProperty("logLevel") != null ? System.getProperty("logLevel") : "INFO";
         final Logger logger = Logger.getLogger(DebugQueries.class.getName());
         logger.setLevel(Level.parse(logLevel));
 
@@ -70,7 +70,7 @@ public class DebugQueries {
         long durHJ = System.currentTimeMillis() - startHJ;
 
         SemiJoin semiJoin = SemiJoin.getInstance(ignite, redis);
-        
+
         long startSJ = System.currentTimeMillis();
         semiJoin.doSemiJoin();
         long durSJ = System.currentTimeMillis() - startSJ;
