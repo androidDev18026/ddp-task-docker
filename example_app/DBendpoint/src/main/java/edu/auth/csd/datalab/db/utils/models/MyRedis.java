@@ -69,6 +69,11 @@ public class MyRedis implements MyDatabase {
     }
 
     @Override
+    public int getSize() {
+        return this.getAllKeys().size();
+    }
+    
+    @Override
     public void createIterator() {
         iterator = redis.keys("*").iterator();
     }

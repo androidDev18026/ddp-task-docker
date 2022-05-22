@@ -17,7 +17,7 @@ class HashJoin {
     private static Hashtable<Integer, String> redisHT;
     private static Hashtable<Integer, String> igniteHT;
     private static Logger logger = null;
-    public static int counter = 0;
+    static int counter = 0;
 
     static {
         System.setProperty(
@@ -67,7 +67,7 @@ class HashJoin {
         boolean readFromRedis = true;
         ImmutableTriple<String, String, String> result;
 
-        System.out.println("============================== Hash Join ==============================");
+        logger.info("============================== Hash Join ==============================");
         while (redis.getIterator().hasNext() && ignite.getIterator().hasNext()) {
             if (readFromRedis) {
                 result = probeAndInsert(redis.getNextTuple(), redisHT, igniteHT);

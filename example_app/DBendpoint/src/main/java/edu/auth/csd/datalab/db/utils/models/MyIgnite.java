@@ -101,6 +101,11 @@ public class MyIgnite implements MyDatabase {
     }
 
     @Override
+    public int getSize() {
+        return this.getAllKeys().size();
+    }
+
+    @Override
     public ImmutablePair<String, String> getNextTuple() {
 
         Entry<Object, Object> currentTuple;

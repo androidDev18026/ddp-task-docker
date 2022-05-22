@@ -20,5 +20,7 @@ public interface MyDatabase {
 
     public void createIterator();
 
+    public int getSize();
+    
     public ImmutablePair<String, String> getNextTuple();
 }
