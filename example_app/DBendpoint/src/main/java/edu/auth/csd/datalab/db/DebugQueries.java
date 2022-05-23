@@ -76,7 +76,7 @@ public class DebugQueries {
         long durSJ = System.currentTimeMillis() - startSJ;
 
         IntersectionBloomFilter intersectionBF = IntersectionBloomFilter.getInstance(ignite, redis,
-                Math.round((iterRedis + iterIgnite) / 5));
+            Math.round((iterRedis + iterIgnite) * 0.1f));
 
         long startBFJ = System.currentTimeMillis();
         intersectionBF.doIntersectionBFJoin();
