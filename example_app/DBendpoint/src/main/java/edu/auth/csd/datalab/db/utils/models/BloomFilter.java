@@ -1,4 +1,4 @@
-package gr.auth.csd.bf;
+package edu.auth.csd.datalab.db;
 
 import javafx.util.Pair;
 
