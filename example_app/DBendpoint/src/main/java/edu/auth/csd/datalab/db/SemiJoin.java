@@ -63,7 +63,7 @@ class SemiJoin {
         }
 
         // Semi-Join R'
-        List<ImmutablePair<String, String>> R1 = new ArrayList<>(10000);
+        List<ImmutablePair<String, String>> R1 = new ArrayList<>(Math.floorDiv(keys_S.size(), 2));
         for (final String key_R : R.getAllKeys()) {
             for (final String key_S : keys_S) {
                 if (key_R.equals(key_S)) {

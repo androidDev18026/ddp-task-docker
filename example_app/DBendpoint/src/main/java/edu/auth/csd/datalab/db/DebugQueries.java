@@ -15,8 +15,9 @@ public class DebugQueries {
     final static String string_item = "ITEMS";
     final static String string_ignite = "IGNITE_HOST";
     final static String string_redis = "REDIS_HOST";
-    final static RandomString rs = new RandomString(2);
-
+    final static String strlen = "STR_LEN";
+    static RandomString rs;
+    
     public static void fillDB(MyDatabase db, final int nElements) {
         for (int i = 0; i < nElements; ++i) {
             db.putData(rs.getRandomString(), String.valueOf(new Random().nextInt(100)));
@@ -38,15 +39,21 @@ public class DebugQueries {
     public static void main(String[] args) {
         String igniteHost = (System.getenv(string_ignite) != null) ? System.getenv(string_ignite) : "HelloIgnite";
         String redisHost = (System.getenv(string_redis) != null) ? System.getenv(string_redis) : "HelloRedis";
+
         int iterRedis = (System.getenv(string_iter1) != null && Integer.parseInt(System.getenv(string_iter1)) > 0)
                 ? Integer.parseInt(System.getenv(string_iter1))
                 : 100;
         int iterIgnite = (System.getenv(string_iter2) != null && Integer.parseInt(System.getenv(string_iter2)) > 0)
                 ? Integer.parseInt(System.getenv(string_iter2))
                 : 100;
+        
+        int charLength = (System.getenv(strlen) != null && Integer.parseInt(System.getenv(strlen)) > 0)
+                ? Integer.parseInt(System.getenv(strlen))
+                : 2;
 
-        Logger mainLogger = getLogger();
-
+        final Logger mainLogger = getLogger();
+        rs = new RandomString(charLength);
+        
         MyIgnite ignite = new MyIgnite(igniteHost, 10800);
         MyRedis redis = new MyRedis(redisHost, 6379);
 
@@ -55,26 +62,34 @@ public class DebugQueries {
 
         mainLogger.info("Filling Ignite with " + iterIgnite + " elements");
         mainLogger.info("Filling Redis  with " + iterRedis + " elements");
-
+        mainLogger.info("Key length is " + charLength + " characters");
+        
         fillDB(ignite, iterIgnite);
         fillDB(redis, iterRedis);
 
-        ignite.displayAllData();
+        if (mainLogger.getLevel().equals(Level.CONFIG)) {
+            ignite.displayAllData();
+        }
         System.out.println("-------------------------------------");
-        redis.displayAllData();
-
+        if (mainLogger.getLevel().equals(Level.CONFIG)) {
+            redis.displayAllData();
+        }
+        
+        /* ------------------ Hash Join ---------------- */
         HashJoin hashJoin = HashJoin.getInstance(ignite, redis);
 
         long startHJ = System.currentTimeMillis();
         hashJoin.doPipelinedHashJoin();
         long durHJ = System.currentTimeMillis() - startHJ;
 
+        /* ------------------ Semi Join ---------------- */
         SemiJoin semiJoin = SemiJoin.getInstance(ignite, redis);
 
         long startSJ = System.currentTimeMillis();
         semiJoin.doSemiJoin();
         long durSJ = System.currentTimeMillis() - startSJ;
         
+        /* ------------------ Intersection BF Join ---------------- */
         IntersectionBloomFilter intersectionBF = IntersectionBloomFilter.getInstance(ignite, redis,
             Math.round((float) Math.ceil((iterRedis + iterIgnite) * 0.1f)), 0.02f);
 
