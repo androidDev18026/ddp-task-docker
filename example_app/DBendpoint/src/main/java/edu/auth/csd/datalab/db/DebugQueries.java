@@ -74,17 +74,23 @@ public class DebugQueries {
         long startSJ = System.currentTimeMillis();
         semiJoin.doSemiJoin();
         long durSJ = System.currentTimeMillis() - startSJ;
-
+        
         IntersectionBloomFilter intersectionBF = IntersectionBloomFilter.getInstance(ignite, redis,
-            Math.round((iterRedis + iterIgnite) * 0.1f));
+            Math.round((float) Math.ceil((iterRedis + iterIgnite) * 0.1f)), 0.02f);
 
-        long startBFJ = System.currentTimeMillis();
-        intersectionBF.doIntersectionBFJoin();
-        long durBFJ = System.currentTimeMillis() - startBFJ;
+        long startBFJ1 = System.currentTimeMillis();
+        intersectionBF.doIntersectionBFJoin1();
+        long durBFJ1 = System.currentTimeMillis() - startBFJ1;
+
+        long startBFJ2 = System.currentTimeMillis();
+        intersectionBF.doIntersectionBFJoin2();
+        long durBFJ2 = System.currentTimeMillis() - startBFJ2;
 
         System.out.printf("\n== Pipelined Hash Join took %dms - %d hit(s) ==\n", durHJ, hashJoin.getCounter());
         System.out.printf("== Semi Join took %dms - %d hit(s) ==\n", durSJ - 5000, semiJoin.getCounter());
-        System.out.printf("== Intersection Bloom Join took %dms - %d hit(s) ==\n", durBFJ,
+        System.out.printf("== Intersection Bloom Join (Guava) took %dms - %d hit(s) ==\n", durBFJ1,
+                intersectionBF.getCounter());
+        System.out.printf("== Intersection Bloom Join (Mine) took %dms - %d hit(s) ==\n", durBFJ2,
                 intersectionBF.getCounter());
 
         ignite.close();

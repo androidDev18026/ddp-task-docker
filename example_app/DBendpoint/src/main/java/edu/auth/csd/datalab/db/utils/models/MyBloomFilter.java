@@ -1,6 +1,4 @@
-package edu.auth.csd.datalab.db;
-
-import javafx.util.Pair;
+package edu.auth.csd.datalab.db.utils.models;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -9,13 +7,17 @@ import java.security.NoSuchAlgorithmException;
 import java.util.BitSet;
 import java.util.Objects;
 
-public class BloomFilter {
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
-    private int expectedElements;
+public class MyBloomFilter implements Cloneable {
+
     private BitSet bitArray;
-    private final float fpr;
     private long bitArraySize;
     private int numberOfHashFunctionsRequired;
+
+    private final int expectedElements;
+    private final float fpr;
+    
     private static MessageDigest md5 = null;
     private static final float FPR_DEFAULT = 0.01f;
 
@@ -27,20 +29,20 @@ public class BloomFilter {
         }
     }
 
-    public BloomFilter(int expectedElements) {
+    public MyBloomFilter(int expectedElements) {
         this.expectedElements = expectedElements;
         this.fpr = FPR_DEFAULT;
-        Pair<Long, Integer> tempPair = this.getNumberOfHashFunctionsAndSize();
+        ImmutablePair<Long, Integer> tempPair = this.getNumberOfHashFunctionsAndSize();
         this.bitArraySize = tempPair.getKey();
         this.numberOfHashFunctionsRequired = (tempPair.getValue() % 2 == 0 && tempPair.getValue() != 6) ?
                 tempPair.getValue() : ((tempPair.getValue() % 2 != 0 && tempPair.getValue() - 1 != 6) ? tempPair.getValue() : 4);
         this.bitArray = new BitSet((int) this.bitArraySize);
     }
 
-    public BloomFilter(int expectedElements, float fpr) {
+    public MyBloomFilter(int expectedElements, float fpr) {
         this.expectedElements = expectedElements;
         this.fpr = fpr;
-        Pair<Long, Integer> tempPair = this.getNumberOfHashFunctionsAndSize();
+        ImmutablePair<Long, Integer> tempPair = this.getNumberOfHashFunctionsAndSize();
         this.bitArraySize = tempPair.getKey();
         this.numberOfHashFunctionsRequired = (tempPair.getValue() % 2 == 0 && tempPair.getValue() != 6) ?
                 tempPair.getValue() : ((tempPair.getValue() % 2 != 0 && tempPair.getValue() - 1 != 6) ? tempPair.getValue() : 4);
@@ -59,6 +61,10 @@ public class BloomFilter {
         this.bitArray.set(index);
     }
 
+    public boolean isSet(final int index) {
+        return this.bitArray.get(index);
+    }
+
     public static String getMD5Hash(final String key) {
         md5.reset();
         md5.update(StandardCharsets.UTF_8.encode(key));
@@ -69,9 +75,9 @@ public class BloomFilter {
         m = -n*ln(p) / (ln(2)^2) the number of bits
         k = m/n * ln(2) the number of hash functions
      */
-    public Pair<Long, Integer> getNumberOfHashFunctionsAndSize() {
+    public ImmutablePair<Long, Integer> getNumberOfHashFunctionsAndSize() {
         final long m = Math.round(- (this.expectedElements) * Math.log(this.fpr) / (Math.log(2) * Math.log(2)));
-        return new Pair<>(m, (int) Math.round(m / this.expectedElements * Math.log(2)));
+        return ImmutablePair.of(m, (int) Math.round(m / this.expectedElements * Math.log(2)));
     }
 
     public String[] getHashChunks(final String key) {
@@ -102,9 +108,18 @@ public class BloomFilter {
 
     public void addToBloomFilter(final String key) {
         for (final int index : this.getBitArrayIndices(key)) {
-            System.out.println("Flipping bit at index " + index);
+            // System.out.println("Flipping bit at index " + index);
             this.flipInBitArray(index);
         }
+    }
+
+    public boolean testKeyInBloomFilter(final String key) {
+        for (final int index : this.getBitArrayIndices(key)) {
+            if (!this.isSet(index)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public BitSet getBloomFilter() {
@@ -124,10 +139,20 @@ public class BloomFilter {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        BloomFilter that = (BloomFilter) o;
+        MyBloomFilter that = (MyBloomFilter) o;
         return Objects.equals(bitArray, that.bitArray);
     }
 
+    @Override
+    public Object clone() {
+        try {
+            return super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return bitArray;
+    }
+    
     @Override
     public int hashCode() {
         return Objects.hash(bitArray);
