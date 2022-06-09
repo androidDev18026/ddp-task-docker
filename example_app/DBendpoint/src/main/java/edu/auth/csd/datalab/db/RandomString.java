@@ -2,20 +2,24 @@ package edu.auth.csd.datalab.db;
 
 import java.util.Random;
 
+/*
+Creates random strings using upper case English letters
+with a predefined length
+*/
+
 class RandomString {
 
-    // create a string of all characters
+    // Create a string of all characters
     final static String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     final static long seed = 4124214L;
     private StringBuilder sb;
-    // create random string builder
-    // create an object of Random class
     private Random random = new Random(seed);
-    // specify length of random string
+    // Specify length of random string
     private int length;
 
     RandomString() {
         sb = new StringBuilder();
+        this.length = 2;
     }
 
     RandomString(int length) {

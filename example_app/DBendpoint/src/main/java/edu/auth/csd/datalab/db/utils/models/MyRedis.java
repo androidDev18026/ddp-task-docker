@@ -58,7 +58,8 @@ public class MyRedis implements MyDatabase {
     @Override
     public List<String> getAllKeys() throws NullPointerException {
         List<String> keys = new ArrayList<>();
-
+        
+        // Use the any (*) pattern to get all keys and store them in-memory
         redis.keys("*").forEach(s -> keys.add(s));
 
         if (!keys.isEmpty()) {

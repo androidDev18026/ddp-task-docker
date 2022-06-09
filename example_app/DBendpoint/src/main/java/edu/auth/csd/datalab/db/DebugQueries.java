@@ -18,6 +18,10 @@ public class DebugQueries {
     final static String strlen = "STR_LEN";
     static RandomString rs;
     
+    /* 
+    Fills database with random keys from the RandomString class and values    
+    from 0 to 100 represented as strings
+    */
     public static void fillDB(MyDatabase db, final int nElements) {
         for (int i = 0; i < nElements; ++i) {
             db.putData(rs.getRandomString(), String.valueOf(new Random().nextInt(100)));
@@ -52,11 +56,14 @@ public class DebugQueries {
                 : 2;
 
         final Logger mainLogger = getLogger();
+        // Initialize random string generator for the keys
         rs = new RandomString(charLength);
         
+        // Connect to DBs'        
         MyIgnite ignite = new MyIgnite(igniteHost, 10800);
         MyRedis redis = new MyRedis(redisHost, 6379);
-
+        
+        // Delete any data residing in those databases (for debugging)
         ignite.deleteCache();
         redis.deleteCache();
 
@@ -100,7 +107,8 @@ public class DebugQueries {
         long startBFJ2 = System.currentTimeMillis();
         intersectionBF.doIntersectionBFJoin2();
         long durBFJ2 = System.currentTimeMillis() - startBFJ2;
-
+        
+        // Display the number of matching pairs and the execution time for each method
         System.out.printf("\n== Pipelined Hash Join took %dms - %d hit(s) ==\n", durHJ, hashJoin.getCounter());
         System.out.printf("== Semi Join took %dms - %d hit(s) ==\n", durSJ - 5000, semiJoin.getCounter());
         System.out.printf("== Intersection Bloom Join (Guava) took %dms - %d hit(s) ==\n", durBFJ1,

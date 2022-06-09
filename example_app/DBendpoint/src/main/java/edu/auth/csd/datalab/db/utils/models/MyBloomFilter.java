@@ -10,7 +10,8 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 public class MyBloomFilter implements Cloneable {
-
+    
+    // BitSet to act as the storage for bits
     private BitSet bitArray;
     private long bitArraySize;
     private int numberOfHashFunctionsRequired;
@@ -28,17 +29,20 @@ public class MyBloomFilter implements Cloneable {
             e.printStackTrace();
         }
     }
-
+    
+    // Initialize a new BitSet with the expected elements that will be inserted
     public MyBloomFilter(int expectedElements) {
         this.expectedElements = expectedElements;
         this.fpr = FPR_DEFAULT;
         ImmutablePair<Long, Integer> tempPair = this.getNumberOfHashFunctionsAndSize();
         this.bitArraySize = tempPair.getKey();
+        // Determines the number of hash functions required to apply to each element 
         this.numberOfHashFunctionsRequired = (tempPair.getValue() % 2 == 0 && tempPair.getValue() != 6) ?
                 tempPair.getValue() : ((tempPair.getValue() % 2 != 0 && tempPair.getValue() - 1 != 6) ? tempPair.getValue() : 4);
         this.bitArray = new BitSet((int) this.bitArraySize);
     }
-
+    
+    // Initialize a new BitSet with the no. of expected elements + accepted fpr 
     public MyBloomFilter(int expectedElements, float fpr) {
         this.expectedElements = expectedElements;
         this.fpr = fpr;
@@ -64,7 +68,8 @@ public class MyBloomFilter implements Cloneable {
     public boolean isSet(final int index) {
         return this.bitArray.get(index);
     }
-
+    
+    // Calculate the MD5 hash that acts as the hash function (32 bits)
     public static String getMD5Hash(final String key) {
         md5.reset();
         md5.update(StandardCharsets.UTF_8.encode(key));
@@ -72,6 +77,9 @@ public class MyBloomFilter implements Cloneable {
     }
 
     /*
+        Get the number of hash functions for FPR and the initial size
+        using these formulas
+        
         m = -n*ln(p) / (ln(2)^2) the number of bits
         k = m/n * ln(2) the number of hash functions
      */
@@ -79,7 +87,8 @@ public class MyBloomFilter implements Cloneable {
         final long m = Math.round(- (this.expectedElements) * Math.log(this.fpr) / (Math.log(2) * Math.log(2)));
         return ImmutablePair.of(m, (int) Math.round(m / this.expectedElements * Math.log(2)));
     }
-
+    
+    // Split the 32 bit MD5 hash to N chunks, where N is the no. of hash function required
     public String[] getHashChunks(final String key) {
         String hash = getMD5Hash(key);
         final int divisor = hash.length() / this.numberOfHashFunctionsRequired;
@@ -93,7 +102,13 @@ public class MyBloomFilter implements Cloneable {
 
         return chunks;
     }
-
+    
+    /*
+    Convert MD5 chunks to a position in the BitSet. Each chunk is mapped to
+    a position using modulo (BitSetSize).
+    
+    Returns all the positions in the BitSet that will be flipped (0->1)
+    */
     public int[] getBitArrayIndices(final String key) {
         int[] indicesToFlip = new int[this.numberOfHashFunctionsRequired];
         int i = -1;
@@ -105,14 +120,19 @@ public class MyBloomFilter implements Cloneable {
 
         return indicesToFlip;
     }
-
+    
+    // Calculates the positions that will be flipped and applies it to the BitSet
     public void addToBloomFilter(final String key) {
         for (final int index : this.getBitArrayIndices(key)) {
             // System.out.println("Flipping bit at index " + index);
             this.flipInBitArray(index);
         }
     }
-
+    
+    /* 
+    Test the existence of a key in the BF, if even on of them is 0, then
+    we can be certain it is not in, otherwise it may exist in the BF.
+    */
     public boolean testKeyInBloomFilter(final String key) {
         for (final int index : this.getBitArrayIndices(key)) {
             if (!this.isSet(index)) {

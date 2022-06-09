@@ -33,7 +33,8 @@ public class MyIgnite implements MyDatabase {
         ignite = Ignition.startClient(cfg);
         cache = ignite.cache("MyData");
     }
-
+    
+    // Delete everything from cache
     public void deleteCache() {
         try {
             cache.clear();
@@ -71,7 +72,7 @@ public class MyIgnite implements MyDatabase {
         iterator = cache.query(new ScanQuery<>()).iterator();
     }
 
-    // initial implementation with simple list
+    // Initial implementation with a list
     @Override
     public void displayAllData() {
         List<String> keys = new ArrayList<>();
@@ -87,7 +88,8 @@ public class MyIgnite implements MyDatabase {
     @Override
     public List<String> getAllKeys() throws NullPointerException {
         List<String> keys = new ArrayList<>();
-
+        
+        // Create a new scan query to get all keys and store them in-memory
         cache.query(new ScanQuery<>()).forEach(key -> {
             if (key.getKey() != null)
                 keys.add(key.getKey().toString());
@@ -104,7 +106,7 @@ public class MyIgnite implements MyDatabase {
     public int getSize() {
         return this.getAllKeys().size();
     }
-
+    
     @Override
     public ImmutablePair<String, String> getNextTuple() {
 

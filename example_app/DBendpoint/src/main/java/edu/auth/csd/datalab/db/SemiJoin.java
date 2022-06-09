@@ -36,7 +36,8 @@ class SemiJoin {
         }
         return semiJoin;
     }
-
+    
+    // Determine which on of the 2 DBs' has more tuples
     static MyDatabase getLargest() {
         if (ignite.getSize() >= redis.getSize()) {
             logger.info("Ignite is the largest");
@@ -46,8 +47,9 @@ class SemiJoin {
         return redis;
     }
 
-    public void doSemiJoin() {
+    public void doSemiJoin() {O[O
         logger.info("============================== Semi Join ==============================");
+        // Find the largest and smallest relationships
         MyDatabase S = getLargest();
         MyDatabase R = S.equals(ignite) ? redis : ignite;
 
@@ -64,9 +66,11 @@ class SemiJoin {
 
         // Semi-Join R'
         List<ImmutablePair<String, String>> R1 = new ArrayList<>(Math.floorDiv(keys_S.size(), 2));
+        // Simple nested-loop join between the keys of R and S on the equi-join column (key)
         for (final String key_R : R.getAllKeys()) {
             for (final String key_S : keys_S) {
                 if (key_R.equals(key_S)) {
+                    // Match -> Add to R' (R1) result set the contents of the leftmost relationship
                     R1.add(ImmutablePair.of(key_R, R.getData(key_R)));
                 }
             }
@@ -80,9 +84,10 @@ class SemiJoin {
             e.printStackTrace();
         }
 
-        // Natural-Join R' ⋈(A) S
+        // Natural-Join R' ⋈ (A) S
         for (final ImmutablePair<String, String> R1_tuple : R1) {
             for (final String key_S : keys_S) {
+                // R' key matched with S -> Output join result
                 if (R1_tuple.getKey().equals(key_S)) {
                     logger.info(String.format("Got match => (%s, %s, %s)", R1_tuple.getKey(), R1_tuple.getValue(),
                             S.getData(R1_tuple.getKey())));

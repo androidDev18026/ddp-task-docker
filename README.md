@@ -8,5 +8,6 @@
 - [X] Implement Bloom filter joins
 - [X] Incorporate my implementation of Bloom Filter
 - [X] Add functionality to specify number of characters to store as key
+- [X] Added comments
 
 &copy; 2022

@@ -28,6 +28,8 @@ class HashJoin {
     private HashJoin(MyIgnite ignite_i, MyRedis redis_i) {
         ignite = ignite_i;
         redis = redis_i;
+        /* Create an iterator to fetch key-value pairs
+           from each DB in a streaming manner */ 
         ignite.createIterator();
         redis.createIterator();
     }
@@ -38,7 +40,12 @@ class HashJoin {
         }
         return hashJoin;
     }
-
+    
+    /* 
+    This is an auxiliary method that checks if the probing hash table already has a specific key.
+    If it is not present, we insert it using the insertion hash table.
+    Finally, in any case, return the result of the join operation, even if it is empty.
+    */
     public ImmutableTriple<String, String, String> probeAndInsert(final ImmutablePair<String, String> tuple,
             Hashtable<Integer, String> htInsert,
             Hashtable<Integer, String> htProbe) {
@@ -58,34 +65,64 @@ class HashJoin {
     }
 
     public void doPipelinedHashJoin() {
+        // Initialize two empty hash tables, one for each DB
         redisHT = new Hashtable<>(10000);
         igniteHT = new Hashtable<>(10000);
-
+        
+        /*
+        Here we define the strategy to draw inputs, simulating a streaming scenario.
+        We start reading from Redis, though we will alternate between the two.
+        */
         boolean readFromRedis = true;
         ImmutableTriple<String, String, String> result;
 
         logger.info("============================== Hash Join ==============================");
+        // While both inputs have more elements 
         while (redis.getIterator().hasNext() && ignite.getIterator().hasNext()) {
+            // If we read from Redis
             if (readFromRedis) {
+                /*
+                Get the next tuple from Redis and probe Ignite, finally insert to Redis'
+                hash table
+                */
                 result = probeAndInsert(redis.getNextTuple(), redisHT, igniteHT);
                 printResult(result, "Ignite", "Redis");
+            // If we read from Ignite
             } else {
+                /*
+                Get the next tuple from Ignite and probe Redis, finally insert to Ignites
+                hash table
+                */
                 result = probeAndInsert(ignite.getNextTuple(), igniteHT, redisHT);
                 printResult(result, "Redis", "Ignite");
             }
-
+            /*
+            To simulate a pipelined streaming scenario we change the order of the
+            reads by alternating between the 2 DB's after each read operation
+            */
             readFromRedis = !readFromRedis;
         }
-
+        
+        /*
+        Since we have exited the loop above, one of the inputs was exhausted,
+        which can happen in a streaming case. 
+        */
+        
+        // First check if Redis has more elements
         while (redis.getIterator().hasNext()) {
+            // Probe Ignite to search for matches and add to Redis hash table
             result = probeAndInsert(redis.getNextTuple(), redisHT, igniteHT);
             printResult(result, "Ignite", "Redis");
         }
-
+        
+        // Redis was empty, so we get elements from Iginte (if any)
         while (ignite.getIterator().hasNext()) {
+            // Probe Redis to search for matches and add to Ignites hash table
             result = probeAndInsert(ignite.getNextTuple(), igniteHT, redisHT);
             printResult(result, "Redis", "Ignite");
         }
+        
+        // All input are exhausted
     }
 
     public static void printResult(final ImmutableTriple<String, String, String> triple, final String probe,

@@ -32,7 +32,8 @@ public class IntersectionBloomFilter {
         logger = Logger.getLogger(SemiJoin.class.getName());
         logger.setLevel(Level.parse(logLevel));
     }
-
+    
+    // Construct the 2 Bloom filters assuming a default 1% false positive rate
     private IntersectionBloomFilter(MyIgnite ignite_i, MyRedis redis_i, int capacity_) {
         ignite = ignite_i;
         redis = redis_i;
@@ -42,13 +43,16 @@ public class IntersectionBloomFilter {
         logger.info("Setting initial capacity to " + capacity + " elements");
         logger.info("Accepting " + fpp * 100 + "% false positive probability");
         
+        // Using my implementation of a bloom filter
         bloomFilterL2 = new MyBloomFilter(capacity, fpp);
         bloomFilterR2 = new MyBloomFilter(capacity, fpp);
         
+        // Using Guavas' approach
         bloomFilterL = BloomFilter.create(Funnels.stringFunnel(Charsets.UTF_8), capacity, fpp);
         bloomFilterR = BloomFilter.create(Funnels.stringFunnel(Charsets.UTF_8), capacity, fpp);
     }
-
+    
+    // Same as above but fpp can be set
     private IntersectionBloomFilter(MyIgnite ignite_i, MyRedis redis_i, int capacity_, float fpp_) {
         ignite = ignite_i;
         redis = redis_i;
@@ -80,37 +84,49 @@ public class IntersectionBloomFilter {
         }
         return intersectionBloomFilter;
     }
-
+    
+    // Add list of keys to bloom filter (Guava)
     public static void fillBF(final List<String> keys, BloomFilter<String> bf) {
         for (final String key : keys) {
             bf.put(key);
         }
     }
-
+    
+    // Add list of keys to bloom filter
     public static void fillBF(final List<String> keys, MyBloomFilter bf) {
         for (final String key : keys) {
             bf.addToBloomFilter(key);
         }
     }
-
+    
+    // Filter predicate to perform logical AND to 2 BF
     public Predicate<String> intersectionPredicateBF() {
         return bloomFilterL.and(bloomFilterR);
     }
-
+    
+    // Intersection BF join using Guava
     public void doIntersectionBFJoin1() {
         logger.info("==== Using Guava's implemetation of Bloom Filter ====");
+        // Get keys from both DBs
         List<String> redisKeys = redis.getAllKeys();
         List<String> igniteKeys = ignite.getAllKeys();
-
+        
+        // Add set of keys to respective BF
         fillBF(redisKeys, bloomFilterL);
         fillBF(igniteKeys, bloomFilterR);
-
+        
         Predicate<String> intersectionBF = intersectionPredicateBF();
 
+        /* 
+        Remove all keys that do NOT meet the predicate, meaning all keys
+        that don't have same bits set in their BFs' thus filtering keys
+        that are surely not in the join result set
+        */
         redisKeys.removeIf(intersectionBF.negate());
         igniteKeys.removeIf(intersectionBF.negate());
 
         counter = 0;
+        // Do a nested-loop join for the remaining keys and show the results
         for (final String key : redisKeys) {
             for (final String igniteKey : igniteKeys) {
                 if (igniteKey.equals(key)) {
@@ -123,6 +139,7 @@ public class IntersectionBloomFilter {
         }
     }
     
+    // Applies the same logic as above using my own Bloom Filter implementation
     public void doIntersectionBFJoin2() {
         logger.info("==== Using my own implementation of Bloom Filter ====");
         List<String> redisKeys = redis.getAllKeys();
