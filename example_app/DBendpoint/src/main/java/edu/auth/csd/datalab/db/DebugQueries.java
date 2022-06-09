@@ -110,10 +110,14 @@ public class DebugQueries {
         
         // Display the number of matching pairs and the execution time for each method
         System.out.printf("\n== Pipelined Hash Join took %dms - %d hit(s) ==\n", durHJ, hashJoin.getCounter());
+        /* 
+        We subtract 5000 (5sec.) because of the added overhead of transferring defined 
+        in the SemiJoin code (2 + 3 secs) during Thread.sleep
+        */  
         System.out.printf("== Semi Join took %dms - %d hit(s) ==\n", durSJ - 5000, semiJoin.getCounter());
         System.out.printf("== Intersection Bloom Join (Guava) took %dms - %d hit(s) ==\n", durBFJ1,
                 intersectionBF.getCounter());
-        System.out.printf("== Intersection Bloom Join (Mine) took %dms - %d hit(s) ==\n", durBFJ2,
+        System.out.printf("== Intersection Bloom Join (Mine ) took %dms - %d hit(s) ==\n", durBFJ2,
                 intersectionBF.getCounter());
 
         ignite.close();
