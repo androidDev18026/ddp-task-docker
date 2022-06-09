@@ -47,7 +47,7 @@ class SemiJoin {
         return redis;
     }
 
-    public void doSemiJoin() {O[O
+    public void doSemiJoin() {
         logger.info("============================== Semi Join ==============================");
         // Find the largest and smallest relationships
         MyDatabase S = getLargest();
