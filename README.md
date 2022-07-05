@@ -1,6 +1,6 @@
 # ddp-task
 
-#### Implement 3 join algorithms on 2 key-value store databases (Redis + Ignite) in a containerized enviroment
+#### Implement 3 join algorithms on 2 key-value store databases ([Redis](https://redis.io/ "Redis Homepage") & [Apache Ignite](https://ignite.apache.org/ "Ignite's Homepage")) in a containerized enviroment
 1. Double-Pipelined Hash Join  
 2. Semi Join
 3. Two-Way Join Processing Using Bloom Filter Intersection
